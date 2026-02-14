@@ -154,11 +154,19 @@ class DataPipeline:
         
         # --- PREPROCESSING STEPS ---
         
-        # 1. Cast Audio (Resample) if voice
-        if ds_conf['type'] == 'voice':
-            target_sr = self.config['audio'].get('sampling_rate', 16000)
-            logger.info(f"Casting audio to {target_sr}Hz...")
-            dataset = dataset.cast_column(ds_conf['voice_col'], Audio(sampling_rate=target_sr))
+        # 1. Cast Audio - Skipped to avoid torchcodec dependency issues.
+        # We will load audio manually using librosa in the filter/map functions.
+        target_sr = self.config['audio'].get('sampling_rate', 16000)
+        
+        # Helper to load audio from path
+        def load_audio(audio_path):
+            try:
+                # Librosa loads as mono=True by default, and resamples if sr is provided
+                y, s = librosa.load(audio_path, sr=target_sr, mono=True)
+                return y, s
+            except Exception as e:
+                logger.warning(f"Error loading audio {audio_path}: {e}")
+                return None, 0
 
         # 2. Filter Function (Includes Text Rules & Audio Duration)
         def filter_fn(example):
@@ -173,9 +181,23 @@ class DataPipeline:
             if ds_conf['type'] == 'voice':
                 voice_col = ds_conf.get('voice_col')
                 if voice_col and voice_col in example:
-                    audio_data = example[voice_col]['array']
-                    sr = example[voice_col]['sampling_rate']
-                    duration = len(audio_data) / sr
+                    # HF datasets 'audio' col is usually a dict/struct. 
+                    # If we didn't cast, it might be a path string or a dict with 'path'.
+                    val = example[voice_col]
+                    audio_path = val if isinstance(val, str) else val.get('path')
+                    
+                    if not audio_path:
+                        return False
+
+                    # Load header info only (faster than decoding full audio) if possible, 
+                    # but librosa.get_duration works well.
+                    try:
+                        duration = librosa.get_duration(path=audio_path)
+                    except:
+                        # Fallback to full load if path not supported or other issue
+                        y, sr = load_audio(audio_path)
+                        if y is None: return False
+                        duration = len(y) / sr
                     
                     min_dur = self.config['audio'].get('min_duration', 1.0)
                     max_dur = self.config['audio'].get('max_duration', 20.0)
@@ -192,9 +214,28 @@ class DataPipeline:
 
         # 3. Map Function (Text Cleaning & Optional Semantic Filter Prep)
         def map_fn(example):
+            # Text normalization
             text_col = ds_conf.get('text_col')
             if text_col and text_col in example:
                 example[text_col] = self.text_proc.basic_clean(example[text_col])
+            
+            # Load Audio into array (simulating HF Audio feature)
+            if ds_conf['type'] == 'voice':
+                 voice_col = ds_conf.get('voice_col')
+                 if voice_col and voice_col in example:
+                    val = example[voice_col]
+                    audio_path = val if isinstance(val, str) else val.get('path')
+                    y, s = load_audio(audio_path)
+                    
+                    if y is not None:
+                        # Update example with decoded data
+                        # Note: We replace the dict/path with the array to match expected output format
+                        # or keep a structure. Let's stick to HF style dict: {'array': ..., 'sampling_rate': ...}
+                        example[voice_col] = {
+                            'array': y,
+                            'sampling_rate': s
+                        }
+                    
             return example
 
         logger.info("Applying text normalization...")
