@@ -114,18 +114,27 @@ class DataPipeline:
         self.hf_token = self.config.get('hf_token')
         self.output_org = self.config.get('output_org')
 
-    def run(self):
+    def run(self, lang_filter: Optional[str] = None):
         datasets_config = self.config.get('datasets', [])
         
         for ds_conf in datasets_config:
+            # Filter by language if provided
+            if lang_filter:
+                ds_lang = ds_conf.get('language', '').lower()
+                if ds_lang != lang_filter.lower():
+                    continue
+
             self.process_dataset(ds_conf)
             
         self.generate_report()
 
     def process_dataset(self, ds_conf):
-        # Check if already processed
+        # Determine Output Path
+        lang_dir = ds_conf.get('language', 'unknown')
         output_name = f"{ds_conf['name']}_processed"
-        local_path = f"./processed_data/{output_name}"
+        local_path = f"./processed_data/{lang_dir}/{output_name}"
+        
+        # Check if already processed
         if os.path.exists(local_path):
             logger.info(f"Dataset {ds_conf['name']} already processed at {local_path}. Skipping.")
             return
@@ -209,12 +218,11 @@ class DataPipeline:
         ))
         
         # Save / Upload
-        output_name = f"{ds_conf['name']}_processed"
-        logger.info(f"Saving to ./processed_data/{output_name}")
-        dataset_processed.save_to_disk(f"./processed_data/{output_name}")
+        logger.info(f"Saving to {local_path}")
+        dataset_processed.save_to_disk(local_path)
         
         if self.output_org and self.hf_token:
-            repo_id = f"{self.output_org}/{output_name}"
+            repo_id = f"{self.output_org}/{ds_conf.get('language', 'multi')}-{output_name}"
             logger.info(f"Uploading to Hub: {repo_id}")
             try:
                 dataset_processed.push_to_hub(repo_id, token=self.hf_token)
@@ -240,6 +248,7 @@ class DataPipeline:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.yaml")
+    parser.add_argument("--lang", help="Filter datasets by language (e.g., 'hausa', 'amharic')")
     args = parser.parse_args()
     
     if not os.path.exists(args.config):
@@ -247,4 +256,4 @@ if __name__ == "__main__":
         sys.exit(1)
         
     pipeline = DataPipeline(args.config)
-    pipeline.run()
+    pipeline.run(lang_filter=args.lang)

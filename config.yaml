@@ -1,47 +1,145 @@
-# Data Pipeline Configuration
+# Data Pipeline Configuration for Low-Resource Speech Translation
 
 # Hugging Face Settings
-hf_token: "YOUR_HF_TOKEN_HERE"  # Set via env var or here
-output_org: "your-org"          # Where to upload processed datasets
+hf_token: "YOUR_HF_TOKEN_HERE"  # Set your token here or via env var
+output_org: "your-org"          # Target HF organization/user
 
 # Processing Parameters
 audio:
   sampling_rate: 16000
   mono: true
-  min_duration: 1.0   # Seconds
-  max_duration: 20.0  # Seconds
+  min_duration: 1.0
+  max_duration: 20.0
   trim_silence: true
-  top_db: 20          # Decibels for silence trimming
+  top_db: 20
 
 text:
   min_chars: 3
-  max_chars: 200
-  max_ratio: 2.0      # Source/Target length ratio
+  max_chars: 300
+  max_ratio: 2.5
   semantic_threshold: 0.6
-  
-# Datasets to Process
+
+# Models
+models:
+  semantic_model: "sentence-transformers/LaBSE" # Good for multilingual/African languages
+
+# Dataset Registry
 datasets:
+  # --- HORN OF AFRICA (Amharic, Somali) ---
   - name: "CommonVoice_Amharic"
+    language: "amharic"
     hf_path: "mozilla-foundation/common_voice_13_0"
     subset: "am"
-    type: "voice" # 'voice' or 'text'
-    split: "train"
+    type: "voice"
     voice_col: "audio"
     text_col: "sentence"
-    source_lang: "am"
-    target_lang: "en" # Assuming translation to English or similar
+    split: "train"
 
-  # Example for Text-only dataset (for Translation training)
-  # - name: "NLLB_Hausa"
-  #   hf_path: "nllb-seed"
-  #   type: "text"
-  #   source_col: "hau"
-  #   target_col: "eng"
-  #   source_lang: "ha"
-  #   target_lang: "en"
+  - name: "Amharic_Speech_Badrex" # Placeholder for ALFFA/EthioSpeech if not directly on HF
+    language: "amharic"
+    hf_path: "badrex/amharic-speech"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "text" # Verify column name
+    split: "train"
 
-# Models (Advanced Filtering)
-models:
-  semantic_model: "sentence-transformers/LaBSE" # For African languages
-  # semantic_model_high_res: "sentence-transformers/distiluse-base-multilingual-cased-v1"
-  # quality_model: "Unbabel/wmt22-comet-da" 
+  - name: "CommonVoice_Somali"
+    language: "somali"
+    hf_path: "mozilla-foundation/common_voice_13_0"
+    subset: "so"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "sentence"
+    split: "train"
+
+  - name: "Somali_ASR_Skydheere"
+    language: "somali"
+    hf_path: "skydheere/soomali-asr-dataset"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "text" # Verify column name
+    split: "train"
+
+  # --- WEST & CENTRAL AFRICA (WAXAL Coverage: Hausa, Yoruba, Lingala, Wolof) ---
+  # Note: Check specific subset names for google/WaxalNLP (e.g., 'ha', 'yo', 'ln', 'wo')
+  
+  - name: "WAXAL_Hausa"
+    language: "hausa"
+    hf_path: "google/WaxalNLP"
+    subset: "ha" 
+    type: "voice"
+    voice_col: "audio" 
+    text_col: "text" # Verify column name
+    split: "train"
+
+  - name: "Hausa_ASR_NCAIR"
+    language: "hausa"
+    hf_path: "NCAIR1/Hausa-ASR"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "transcription" # Often customizable
+    split: "train"
+
+  - name: "WAXAL_Yoruba"
+    language: "yoruba"
+    hf_path: "google/WaxalNLP"
+    subset: "yo"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "text"
+    split: "train"
+
+  - name: "WAXAL_Wolof"
+    language: "wolof"
+    hf_path: "google/WaxalNLP"
+    subset: "wo"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "text"
+    split: "train"
+    
+  - name: "WAXAL_Lingala"
+    language: "lingala"
+    hf_path: "google/WaxalNLP"
+    subset: "ln" # Guessing iso code
+    type: "voice"
+    voice_col: "audio"
+    text_col: "text"
+    split: "train"
+
+  # --- SOUTHERN AFRICA (Zulu) ---
+  - name: "Swivuriso_Zulu"
+    language: "zulu"
+    hf_path: "dsfsi-anv/za-african-next-voices"
+    subset: "zul" # Check subset for Zulu
+    type: "voice"
+    voice_col: "audio"
+    text_col: "transcription" # Verify
+    split: "train"
+
+  - name: "CommonVoice_Zulu"
+    language: "zulu"
+    hf_path: "mozilla-foundation/common_voice_13_0"
+    subset: "zu"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "sentence"
+    split: "train"
+
+  # --- NORTH AFRICA (Egyptian Arabic) ---
+  - name: "MGB3_Egyptian_ASR"
+    language: "arabic"
+    hf_path: "MightyStudent/Egyptian-ASR-MGB-3"
+    type: "voice"
+    voice_col: "audio"
+    text_col: "transcription" # Verify
+    split: "train"
+    
+  - name: "CommonVoice_Arabic"
+    language: "arabic"
+    hf_path: "mozilla-foundation/common_voice_13_0"
+    subset: "ar" # Contains mixed accents, post-processing filter recommended
+    type: "voice"
+    voice_col: "audio"
+    text_col: "sentence"
+    split: "train"

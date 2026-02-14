@@ -1,0 +1,24 @@
+hf_token: null
+output_org: null
+
+datasets:
+  - name: "Dummy_Test"
+    hf_path: "csv"
+    subset: null # Not used for CSV
+    data_files: "dummy_data.csv" # Special HF datasets arg for local files
+    type: "voice"
+    voice_col: "audio_path"
+    text_col: "text"
+    split: "train"
+
+audio:
+  sampling_rate: 16000
+  mono: true
+  min_duration: 0.1
+  max_duration: 100.0 # Wide range for test
+  trim_silence: false
+
+text:
+  min_chars: 1
+  max_chars: 1000
+  max_ratio: 10.0
