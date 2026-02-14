@@ -66,42 +66,42 @@ datasets:
   - name: "WAXAL_Hausa"
     language: "hausa"
     hf_path: "google/WaxalNLP"
-    subset: "ha" 
+    subset: "hau_tts" # Using TTS subset as ASR subset is not listed
     type: "voice"
     voice_col: "audio" 
     text_col: "text" # Verify column name
     split: "train"
 
-  - name: "Hausa_ASR_NCAIR"
-    language: "hausa"
-    hf_path: "NCAIR1/Hausa-ASR"
-    type: "voice"
-    voice_col: "audio"
-    text_col: "transcription" # Often customizable
-    split: "train"
+  # - name: "Hausa_ASR_NCAIR" # GATED DATASET: Requires manual acceptance on HF website
+  #   language: "hausa"
+  #   hf_path: "NCAIR1/Hausa-ASR"
+  #   type: "voice"
+  #   voice_col: "audio"
+  #   text_col: "transcription"
+  #   split: "train"
 
   - name: "WAXAL_Yoruba"
     language: "yoruba"
     hf_path: "google/WaxalNLP"
-    subset: "yo"
+    subset: "yor_tts" # Using TTS subset
     type: "voice"
     voice_col: "audio"
     text_col: "text"
     split: "train"
 
-  - name: "WAXAL_Wolof"
+  - name: "ALFFA_Wolof" # Switched from WAXAL to ALFFA for better availability
     language: "wolof"
-    hf_path: "google/WaxalNLP"
-    subset: "wo"
+    hf_path: "Isma/alffa_wolof"
+    # subset: "wo" 
     type: "voice"
     voice_col: "audio"
-    text_col: "text"
+    text_col: "sentence"
     split: "train"
     
   - name: "WAXAL_Lingala"
     language: "lingala"
     hf_path: "google/WaxalNLP"
-    subset: "ln" # Guessing iso code
+    subset: "lin_asr"
     type: "voice"
     voice_col: "audio"
     text_col: "text"
