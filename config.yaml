@@ -1,0 +1,47 @@
+# Data Pipeline Configuration
+
+# Hugging Face Settings
+hf_token: "YOUR_HF_TOKEN_HERE"  # Set via env var or here
+output_org: "your-org"          # Where to upload processed datasets
+
+# Processing Parameters
+audio:
+  sampling_rate: 16000
+  mono: true
+  min_duration: 1.0   # Seconds
+  max_duration: 20.0  # Seconds
+  trim_silence: true
+  top_db: 20          # Decibels for silence trimming
+
+text:
+  min_chars: 3
+  max_chars: 200
+  max_ratio: 2.0      # Source/Target length ratio
+  semantic_threshold: 0.6
+  
+# Datasets to Process
+datasets:
+  - name: "CommonVoice_Amharic"
+    hf_path: "mozilla-foundation/common_voice_13_0"
+    subset: "am"
+    type: "voice" # 'voice' or 'text'
+    split: "train"
+    voice_col: "audio"
+    text_col: "sentence"
+    source_lang: "am"
+    target_lang: "en" # Assuming translation to English or similar
+
+  # Example for Text-only dataset (for Translation training)
+  # - name: "NLLB_Hausa"
+  #   hf_path: "nllb-seed"
+  #   type: "text"
+  #   source_col: "hau"
+  #   target_col: "eng"
+  #   source_lang: "ha"
+  #   target_lang: "en"
+
+# Models (Advanced Filtering)
+models:
+  semantic_model: "sentence-transformers/LaBSE" # For African languages
+  # semantic_model_high_res: "sentence-transformers/distiluse-base-multilingual-cased-v1"
+  # quality_model: "Unbabel/wmt22-comet-da" 

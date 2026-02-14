@@ -1,0 +1,15 @@
+transformers
+datasets
+librosa
+soundfile
+torch
+pandas
+pyyaml
+sentence-transformers
+jiwer
+sacrebleu
+accelerate
+noisereduce
+colorlog
+tqdm
+scipy
