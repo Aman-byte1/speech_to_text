@@ -152,10 +152,8 @@ class DataPipeline:
 
         original_len = len(dataset)
         
-        # --- PREPROCESSING STEPS ---
-        
         # 1. Cast Audio - Skipped to avoid torchcodec dependency issues.
-        # We will load audio manually using librosa in the filter/map functions.
+        # We will load audio manually using librosa.
         target_sr = self.config['audio'].get('sampling_rate', 16000)
         
         # Helper to load audio from path
@@ -167,6 +165,30 @@ class DataPipeline:
             except Exception as e:
                 logger.warning(f"Error loading audio {audio_path}: {e}")
                 return None, 0
+
+        # CRITICAL FIX: Rename/Drop the original Audio Feature column to prevent 
+        # 'datasets' from trying to decode it automatically (which triggers torchcodec).
+        # We only need the path string.
+        if ds_conf['type'] == 'voice':
+             voice_col = ds_conf.get('voice_col')
+             if voice_col in dataset.column_names:
+                 # If it's an Audio feature, the 'path' is inside. 
+                 # We can't easily extract path without triggering decode if we iterate.
+                 # BUT, normally 'datasets' doesn't decode unless we access the column.
+                 # The error happens during filter/map iteration.
+                 # Strategy: Cast to string (path) effectively or just use the path if available separately.
+                 # For many HF datasets, 'audio' is a struct: {'path': ..., 'array': ...}
+                 # We want just the 'path' without decoding 'array'.
+        # CRITICAL FIX: Remote the 'Audio' feature type to stop auto-decoding.
+        # casting to None reveals the underlying raw dictionary/string.
+        if ds_conf['type'] == 'voice':
+             voice_col = ds_conf.get('voice_col')
+             logger.info(f"Removing Audio feature branding from '{voice_col}' to bypass decoding...")
+             try:
+                 # This reveals the raw structure ({'path': ..., 'array': ...} or just path string)
+                 dataset = dataset.cast_column(voice_col, None) 
+             except Exception as e:
+                 logger.warning(f"Could not cast column {voice_col} to None: {e}")
 
         # 2. Filter Function (Includes Text Rules & Audio Duration)
         def filter_fn(example):
