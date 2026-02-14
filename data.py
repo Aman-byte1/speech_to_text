@@ -154,11 +154,11 @@ class DataPipeline:
         
         # --- PREPROCESSING STEPS ---
         
-        # 1. Cast Audio (Resample + Mono) if voice
+        # 1. Cast Audio (Resample) if voice
         if ds_conf['type'] == 'voice':
             target_sr = self.config['audio'].get('sampling_rate', 16000)
-            logger.info(f"Casting audio to {target_sr}Hz mono...")
-            dataset = dataset.cast_column(ds_conf['voice_col'], Audio(sampling_rate=target_sr, mono=True))
+            logger.info(f"Casting audio to {target_sr}Hz...")
+            dataset = dataset.cast_column(ds_conf['voice_col'], Audio(sampling_rate=target_sr))
 
         # 2. Filter Function (Includes Text Rules & Audio Duration)
         def filter_fn(example):
