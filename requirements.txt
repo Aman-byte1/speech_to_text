@@ -3,6 +3,7 @@ datasets
 librosa
 soundfile
 torch
+torchaudio
 pandas
 pyyaml
 sentence-transformers
