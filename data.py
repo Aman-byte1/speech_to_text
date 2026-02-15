@@ -12,7 +12,7 @@ from tqdm import tqdm
 import librosa
 import soundfile as sf
 import numpy as np
-from datasets import load_dataset, Dataset, Audio
+from datasets import load_dataset, Dataset, Audio, Value
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer, util
 import noisereduce as nr
@@ -170,16 +170,17 @@ class DataPipeline:
         # 'datasets' from trying to decode it automatically (which triggers torchcodec).
         # We only need the path string.
 
-        # CRITICAL FIX: Remote the 'Audio' feature type to stop auto-decoding.
-        # casting to None reveals the underlying raw dictionary/string.
+        # CRITICAL FIX: Rename/Drop the original Audio Feature column to prevent 
+        # 'datasets' from trying to decode it automatically (which triggers torchcodec).
+        # We only need the path string.
         if ds_conf['type'] == 'voice':
              voice_col = ds_conf.get('voice_col')
              logger.info(f"Removing Audio feature branding from '{voice_col}' to bypass decoding...")
              try:
-                 # This reveals the raw structure ({'path': ..., 'array': ...} or just path string)
-                 dataset = dataset.cast_column(voice_col, None) 
+                 # Cast to string to force it to be treated as a path, disabling auto-decoding
+                 dataset = dataset.cast_column(voice_col, Value("string"))
              except Exception as e:
-                 logger.warning(f"Could not cast column {voice_col} to None: {e}")
+                 logger.warning(f"Could not cast column {voice_col} to string: {e}")
 
         # 2. Filter Function (Includes Text Rules & Audio Duration)
         def filter_fn(example):
